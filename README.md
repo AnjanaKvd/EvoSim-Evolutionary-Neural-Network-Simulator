@@ -103,7 +103,7 @@ After 20 generations of selection pressure, something remarkable has happened. T
 
 The wall-hugging strategy is now dominant. The few stragglers on the left are descendants of recent mutations that broke a working genome.
 
-![Generation 40 — 192/200 survived (96.0%)](snapshots/gen_000040.png)
+![Generation 40 — 192/200 survived (96.0%)](output/demo/snapshots/gen_000040.png)
 
 ---
 
@@ -111,7 +111,7 @@ The wall-hugging strategy is now dominant. The few stragglers on the left are de
 
 Virtually every creature finds the east zone. The diversity has dropped significantly — most creatures share very similar genomes encoding the same "go east" wiring.
 
-![Generation 60 — 191/200 survived (95.5%)](snapshots/gen_000060.png)
+![Generation 60 — 191/200 survived (95.5%)](output/demo/snapshots/gen_000060.png)
 
 ---
 
@@ -119,7 +119,7 @@ Virtually every creature finds the east zone. The diversity has dropped signific
 
 The population has essentially solved the problem. Survival rate is stable at **97.5%**. The few that don't make it are victims of unlucky mutations that disrupted a working brain.
 
-![Generation 80 — 195/200 survived (97.5%)](snapshots/gen_000080.png)
+![Generation 80 — 195/200 survived (97.5%)](output/demo/snapshots/gen_000080.png)
 
 > The west side is completely empty. All creatures migrate east within their 150-step lifetime.  
 > The colour spectrum has collapsed — nearly identical genomes throughout the population.
@@ -128,7 +128,7 @@ The population has essentially solved the problem. Survival rate is stable at **
 
 ### Generation 99 — Final State
 
-![Generation 99 — 191/200 survived (95.5%)](snapshots/gen_000099.png)
+![Generation 99 — 191/200 survived (95.5%)](output/demo/snapshots/gen_000099.png)
 
 > Stable at ~96–98% survival for the final 50 generations.  
 > The remaining ~3% losses are due to ongoing mutations continuously introducing broken variants.
@@ -139,7 +139,7 @@ The population has essentially solved the problem. Survival rate is stable at **
 
 The chart below shows the full arc of the 100-generation demo run:
 
-![Evolution chart — survivors (green) and genetic diversity (purple)](charts/demo_chart.png)
+![Evolution chart — survivors (green) and genetic diversity (purple)](output/demo/charts/demo_chart.png)
 
 | Line | Meaning |
 |---|---|
@@ -209,7 +209,7 @@ The best-connected survivor at Generation 0 — a creature that happened to surv
 
 The best survivor at Generation 80 — a creature whose genome was selected because its wiring actually moves it east.
 
-![Neural wiring — Generation 80, best survivor (8 connections)](neural/gen_000080_best.png)
+![Neural wiring — Generation 80, best survivor (8 connections)](output/demo/neural/gen_000080_best.png)
 
 > **8 evolved connections — completely restructured.**  
 > Sensors used: `last_move_x`, `pop_grad_fwd`, `bdist_y`, `random`, `loc_y`.  
@@ -232,9 +232,9 @@ The best survivor at Generation 80 — a creature whose genome was selected beca
 <td align="center"><b>Generation 75</b></td>
 </tr>
 <tr>
-<td><img src="neural/gen_000025_best.png" width="260"/></td>
-<td><img src="neural/gen_000050_best.png" width="260"/></td>
-<td><img src="neural/gen_000075_best.png" width="260"/></td>
+<td><img src="output/demo/neural/gen_000025_best.png" width="260"/></td>
+<td><img src="output/demo/neural/gen_000050_best.png" width="260"/></td>
+<td><img src="output/demo/neural/gen_000075_best.png" width="260"/></td>
 </tr>
 </table>
 
@@ -482,7 +482,7 @@ In kill-neuron experiments, the colony frequently locks into a state where 60–
 
 ## Raw Data
 
-The full per-generation log is available at [`evolution_log.csv`](evolution_log.csv).
+The full per-generation log is available at [`evolution_log.csv`](output/demo/evolution_log.csv).
 
 Columns: `generation, population, survivors, alive, survival_pct, murdered, diversity, elapsed_s`
 
