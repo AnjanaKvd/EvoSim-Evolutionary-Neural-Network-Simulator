@@ -118,13 +118,14 @@ class NeuralNet {
 
 // ── Creature ───────────────────────────────────────────────────
 class Creature {
-  constructor(x, y, genome, maxInternal) {
+  constructor(x, y, genome, maxInternal, rng) {
     this.x = x; this.y = y;
     this.genome = genome;
     this.brain = new NeuralNet(genome, maxInternal);
     this.alive = true;
     this.age = 0;
-    this.lastDir = 0;
+    // Randomize initial direction to avoid east-bias from move_forward
+    this.lastDir = rng ? Math.floor(rng() * 8) : Math.floor(Math.random() * 8);
     this.oscPhase = 0;
     this.radiationDose = 0;
     this.color = genomeToColor(genome);
@@ -435,8 +436,8 @@ export default function EvoSim() {
   const runOneGen = useCallback((simState) => {
     const { world, genomes, rng, gen, cfg } = simState;
 
-    // Build creatures
-    const creatures = genomes.map(g => new Creature(0, 0, g, cfg.maxInternal));
+    // Build creatures — pass rng so lastDir is seeded (not Math.random)
+    const creatures = genomes.map(g => new Creature(0, 0, g, cfg.maxInternal, rng));
     world.creatures = creatures;
     world.grid.fill(null);
     world.murders = 0;
@@ -452,13 +453,14 @@ export default function EvoSim() {
 
     // Simulate all steps
     for (let step = 0; step < cfg.stepsPerGen; step++) {
-      // Radioactivity
+      // Radioactivity — applied before movement (same as Python)
       if (cfg.selectionMode === "radioactive") {
         const westActive = step < cfg.stepsPerGen / 2;
         creatures.forEach(c => {
           if (!c.alive) return;
           const dist = westActive ? c.x : world.W - 1 - c.x;
-          c.radiationDose += Math.exp(-0.04 * dist) * 0.012;
+          // Match Python: exp(-0.04 * dist) * 0.01
+          c.radiationDose += Math.exp(-0.04 * dist) * 0.01;
           if (c.radiationDose > 1.0) {
             c.alive = false;
             world.grid[c.y * world.W + c.x] = null;
@@ -580,12 +582,18 @@ export default function EvoSim() {
     const container = canvasContainerRef.current;
     const canvas = canvasWorldRef.current;
     if (!container || !canvas) return;
+    // Set initial size immediately (before first ResizeObserver callback)
+    const initW = container.clientWidth || 400;
+    const initH = container.clientHeight || 400;
+    canvas.width = Math.max(initW, initH);
+    canvas.height = Math.max(initW, initH);
     const ro = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        const size = Math.min(width, height);
-        canvas.width = size;
-        canvas.height = size;
+        if (width > 0 && height > 0) {
+          canvas.width = width;
+          canvas.height = height;
+        }
       }
     });
     ro.observe(container);
@@ -598,20 +606,67 @@ export default function EvoSim() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const cw = canvas.width, ch = canvas.height;
+    if (cw === 0 || ch === 0) return;
     const W = displayWorld.W, H = displayWorld.H;
     const cellW = cw / W, cellH = ch / H;
 
     ctx.fillStyle = "#080c10";
     ctx.fillRect(0, 0, cw, ch);
 
-    const mode = canvasCfgRef.current.selectionMode;
-    ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = mode === "radioactive" ? "#ff3300" : "#00ff88";
-    if (mode === "east") ctx.fillRect(cw / 2, 0, cw / 2, ch);
-    else if (mode === "west") ctx.fillRect(0, 0, cw / 2, ch);
-    else if (mode === "west_east") { ctx.fillRect(0, 0, cfg.stripWidth * cellW, ch); ctx.fillRect(cw - cfg.stripWidth * cellW, 0, cfg.stripWidth * cellW, ch); }
-    else if (mode === "corners") { const cs = cfg.cornerSize;[[0, 0], [W - cs, 0], [0, H - cs], [W - cs, H - cs]].forEach(([rx, ry]) => ctx.fillRect(rx * cellW, ry * cellH, cs * cellW, cs * cellH)); }
-    else if (mode === "center") { ctx.beginPath(); ctx.arc(cw / 2, ch / 2, cfg.centerRadius * cellW, 0, Math.PI * 2); ctx.fill(); }
-    else if (mode === "radioactive") { ctx.fillRect(0, 0, W * 0.12 * cellW, ch); ctx.fillRect(cw - W * 0.12 * cellW, 0, W * 0.12 * cellW, ch); }
+    // Use the config that was active when the simulation was started (simRef.current.cfg)
+    // Fall back to canvasCfgRef.current if no sim is running
+    const activeCfg = simRef.current.cfg || canvasCfgRef.current;
+    const mode = activeCfg.selectionMode;
+
+    ctx.save();
+    ctx.globalAlpha = 0.13;
+
+    if (mode === "radioactive") {
+      // Radioactive: show danger zones in red with gradient fade
+      // Lethal distance: exp(-0.04 * d) * 0.01 * (stepsPerGen/2) > 1.0
+      // => d < -ln(1.0 / (0.01 * stepsPerGen/2)) / 0.04
+      const halfSteps = (activeCfg.stepsPerGen || 200) / 2;
+      const lethalDist = Math.max(1, Math.ceil(-Math.log(1.0 / (0.01 * halfSteps)) / 0.04));
+      // Draw gradient danger zones on both walls
+      const gradL = ctx.createLinearGradient(0, 0, lethalDist * cellW, 0);
+      gradL.addColorStop(0, "rgba(255,50,0,0.55)");
+      gradL.addColorStop(1, "rgba(255,50,0,0)");
+      ctx.fillStyle = gradL;
+      ctx.fillRect(0, 0, lethalDist * cellW, ch);
+      const gradR = ctx.createLinearGradient(cw, 0, cw - lethalDist * cellW, 0);
+      gradR.addColorStop(0, "rgba(255,50,0,0.55)");
+      gradR.addColorStop(1, "rgba(255,50,0,0)");
+      ctx.fillStyle = gradR;
+      ctx.fillRect(cw - lethalDist * cellW, 0, lethalDist * cellW, ch);
+      // Safe middle zone highlight
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = "#00ff88";
+      ctx.fillRect(lethalDist * cellW, 0, cw - 2 * lethalDist * cellW, ch);
+    } else {
+      ctx.fillStyle = "#00ff88";
+      if (mode === "east") {
+        ctx.fillRect(cw / 2, 0, cw / 2, ch);
+      } else if (mode === "west") {
+        ctx.fillRect(0, 0, cw / 2, ch);
+      } else if (mode === "west_east") {
+        const sw = activeCfg.stripWidth;
+        ctx.fillRect(0, 0, sw * cellW, ch);
+        ctx.fillRect(cw - sw * cellW, 0, sw * cellW, ch);
+      } else if (mode === "corners") {
+        const cs = activeCfg.cornerSize;
+        // All 4 corners: (0,0), (W-cs,0), (0,H-cs), (W-cs,H-cs) in grid coords
+        [[0, 0], [W - cs, 0], [0, H - cs], [W - cs, H - cs]].forEach(([rx, ry]) =>
+          ctx.fillRect(rx * cellW, ry * cellH, cs * cellW, cs * cellH));
+      } else if (mode === "center") {
+        // Use ellipse so the zone matches selection logic for non-square worlds
+        ctx.beginPath();
+        ctx.ellipse(cw / 2, ch / 2,
+          activeCfg.centerRadius * cellW,
+          activeCfg.centerRadius * cellH,
+          0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
 
     ctx.strokeStyle = "rgba(255,255,255,0.018)";
@@ -622,7 +677,7 @@ export default function EvoSim() {
     displayWorld.creatures.forEach(c => {
       if (!c.alive) return;
       const px = c.x * cellW + cellW / 2, py = c.y * cellH + cellH / 2;
-      const r = Math.max(1.2, cellW * 0.38);
+      const r = Math.max(1.2, Math.min(cellW, cellH) * 0.38);
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
       ctx.fillStyle = `rgb(${c.color[0]},${c.color[1]},${c.color[2]})`;
       ctx.fill();
@@ -630,8 +685,8 @@ export default function EvoSim() {
 
     ctx.fillStyle = "rgba(0,255,136,0.45)";
     ctx.font = "bold 10px monospace";
-    ctx.fillText(`GEN ${displayWorld.creatures[0]?.age !== undefined ? generation : generation}`, 8, 14);
-  }, [displayWorld, generation, cfg]);
+    ctx.fillText(`GEN ${generation}`, 8, 14);
+  }, [displayWorld, generation]);
 
   // ── Scenario info ──────────────────────────────────────────
   const scenarioInfo = {
@@ -745,7 +800,6 @@ export default function EvoSim() {
               { value: "corners", label: "Corners" },
               { value: "center", label: "Centre Circle" },
               { value: "radioactive", label: "Radioactive Walls" },
-              { value: "kill", label: "Kill Enabled" },
             ]}
             onChange={v => updateCfg("selectionMode", v)} />
 
@@ -885,10 +939,10 @@ export default function EvoSim() {
 
           <div style={{ marginTop: "auto", padding: "10px 0 0", borderTop: "1px solid #1a3050" }}>
             <div style={{ fontSize: 11, color: "#8ab0c0", lineHeight: 1.8 }}>
-              <div style={{ color: "#00e87a", display: "inline" }}>■ </div>Survivors (green zone)<br />
-              <div style={{ color: "#bb66ff", display: "inline" }}>■ </div>Genetic diversity<br />
-              <div style={{ color: "#5599ee", display: "inline" }}>● </div>Sensor neurons<br />
-              <div style={{ color: "#ff88aa", display: "inline" }}>● </div>Action neurons
+              <span style={{ color: "#00e87a" }}>■ Survivors (green zone)</span><br />
+              <span style={{ color: "#bb66ff" }}>■ Genetic diversity</span><br />
+              <span style={{ color: "#5599ee" }}>● Sensor neurons</span><br />
+              <span style={{ color: "#ff88aa" }}>● Action neurons</span>
             </div>
           </div>
         </div>
