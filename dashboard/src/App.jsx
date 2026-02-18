@@ -191,10 +191,11 @@ class World {
 
     // Sense
     const s = new Float32Array(NUM_SENSORS);
-    s[0] = creature.x / (this.W - 1);
-    s[1] = creature.y / (this.H - 1);
+    // Recenter spatial inputs to [-1, 1] to remove East/South bias
+    s[0] = (creature.x / (this.W - 1)) * 2 - 1;
+    s[1] = (creature.y / (this.H - 1)) * 2 - 1;
     s[2] = creature.age / Math.max(1, stepsPerGen - 1);
-    s[3] = this.rng();
+    s[3] = this.rng() * 2 - 1; // Recenter random too
     s[4] = (Math.sin(creature.oscPhase) + 1) / 2;
     s[5] = 1 - Math.min(creature.x, this.W - 1 - creature.x) / (this.W / 2);
     s[6] = 1 - Math.min(creature.y, this.H - 1 - creature.y) / (this.H / 2);
@@ -208,8 +209,9 @@ class World {
     s[8] = (fwd - bwd) / 5;
     const ahead = this.get(creature.x + ddx, creature.y + ddy);
     s[9] = ahead ? genomeSimilarity(creature.genome, ahead.genome) : 0;
-    s[10] = (DIRS[creature.lastDir][0] + 1) / 2;
-    s[11] = (DIRS[creature.lastDir][1] + 1) / 2;
+    // Recenter move inputs to [-1, 1]
+    s[10] = DIRS[creature.lastDir][0];
+    s[11] = DIRS[creature.lastDir][1];
     s[12] = ahead ? 1 : 0;
     s[13] = 1;
 
@@ -414,7 +416,7 @@ export default function EvoSim() {
     maxInternal: 4, mutationRate: 0.001,
     selectionMode: "east",
     stripWidth: 24, cornerSize: 24,
-    centerRadius: 18,
+    centerRadius: 28,
     killEnabled: false,
     speed: 3,
   });
@@ -459,8 +461,8 @@ export default function EvoSim() {
         creatures.forEach(c => {
           if (!c.alive) return;
           const dist = westActive ? c.x : world.W - 1 - c.x;
-          // Match Python: exp(-0.04 * dist) * 0.01
-          c.radiationDose += Math.exp(-0.04 * dist) * 0.01;
+          // Match Python: exp(-0.04 * dist) * 0.03 (moderate dose)
+          c.radiationDose += Math.exp(-0.04 * dist) * 0.03;
           if (c.radiationDose > 1.0) {
             c.alive = false;
             world.grid[c.y * world.W + c.x] = null;
@@ -623,10 +625,10 @@ export default function EvoSim() {
 
     if (mode === "radioactive") {
       // Radioactive: show danger zones in red with gradient fade
-      // Lethal distance: exp(-0.04 * d) * 0.01 * (stepsPerGen/2) > 1.0
-      // => d < -ln(1.0 / (0.01 * stepsPerGen/2)) / 0.04
+      // Lethal distance: exp(-0.04 * d) * 0.03 * (stepsPerGen/2) > 1.0
+      // => d < -ln(1.0 / (0.03 * stepsPerGen/2)) / 0.04
       const halfSteps = (activeCfg.stepsPerGen || 200) / 2;
-      const lethalDist = Math.max(1, Math.ceil(-Math.log(1.0 / (0.01 * halfSteps)) / 0.04));
+      const lethalDist = Math.max(1, Math.ceil(-Math.log(1.0 / (0.03 * halfSteps)) / 0.04));
       // Draw gradient danger zones on both walls
       const gradL = ctx.createLinearGradient(0, 0, lethalDist * cellW, 0);
       gradL.addColorStop(0, "rgba(255,50,0,0.55)");
