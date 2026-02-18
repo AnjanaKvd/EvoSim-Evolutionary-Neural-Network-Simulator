@@ -411,10 +411,8 @@ python server.py
 **Start the frontend:**
 
 ```bash
-npm create vite@latest evosim-ui -- --template react
-cd evosim-ui
-npm install recharts
-# copy evosim_dashboard_connected.jsx → src/App.jsx
+cd dashboard
+npm install 
 npm run dev
 # → http://localhost:5173
 ```
