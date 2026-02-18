@@ -467,7 +467,3 @@ The full per-generation log is available at [`evolution_log.csv`](output/demo/ev
 Columns: `generation, population, survivors, alive, survival_pct, murdered, diversity, elapsed_s`
 
 ---
-
-## License
-
-MIT — do whatever you want with it.
