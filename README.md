@@ -80,7 +80,7 @@ The demo below sets mutation rate to 0.001 (1-in-32,000 per gene) and uses **eas
 
 The founding population has **random genomes** assigned by a random number generator. Their brains are wired at random — some move north, some south, some don't move at all. Half of them happen to be born on the east side and survive purely by luck.
 
-![Generation 0 — 107/200 survived (53.5%)](snapshots/gen_000000.png)
+![Generation 0 — 107/200 survived (53.5%)](output/demo/snapshots/gen_000000.png)
 
 > **53.5% survival** — pure chance. The green zone (right half) is the survival area.  
 > Notice the full spectrum of colours: maximum genetic diversity, every creature has a different genome.
@@ -91,7 +91,7 @@ The founding population has **random genomes** assigned by a random number gener
 
 After 20 generations of selection pressure, something remarkable has happened. The creatures have stopped being randomly distributed. Almost all of them cluster against the **eastern wall** at the end of each generation.
 
-![Generation 20 — 188/200 survived (94.0%)](snapshots/gen_000020.png)
+![Generation 20 — 188/200 survived (94.0%)](output/demo/snapshots/gen_000020.png)
 
 > **94.0% survival** — up from 53.5% in just 20 generations.  
 > The west side is nearly empty. The east wall is crowded.  
@@ -197,7 +197,7 @@ The strongest action output above a threshold of 0.1 is executed each step.
 
 The best-connected survivor at Generation 0 — a creature that happened to survive not because of good wiring, but because it was born on the right side.
 
-![Neural wiring — Generation 0, best survivor (8 connections)](neural/gen_000000_best.png)
+![Neural wiring — Generation 0, best survivor (8 connections)](output/demo/neural/gen_000000_best.png)
 
 > **8 random connections.** Sensors used: `last_move_x`, `genetic_sim_fwd`.  
 > Actions targeted: `noop/kill`, `turn_left`, `move_forward`, `move_random`.  
