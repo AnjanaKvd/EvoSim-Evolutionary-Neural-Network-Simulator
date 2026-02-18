@@ -64,9 +64,9 @@ function genomeToColor(genome) {
 
 // ── Neural Network ────────────────────────────────────────────
 const NUM_SENSORS = 14, NUM_ACTIONS = 8;
-const SENSOR_LABELS = ["loc_x","loc_y","age","random","oscillator","bdist_x","bdist_y","pop_density","pop_grad_fwd","genetic_sim_fwd","last_move_x","last_move_y","fwd_blocked","constant"];
-const ACTION_LABELS = ["move_x","move_y","move_random","move_forward","turn_left","turn_right","reverse","noop/kill"];
-const DIRS = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+const SENSOR_LABELS = ["loc_x", "loc_y", "age", "random", "oscillator", "bdist_x", "bdist_y", "pop_density", "pop_grad_fwd", "genetic_sim_fwd", "last_move_x", "last_move_y", "fwd_blocked", "constant"];
+const ACTION_LABELS = ["move_x", "move_y", "move_random", "move_forward", "turn_left", "turn_right", "reverse", "noop/kill"];
+const DIRS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
 
 class NeuralNet {
   constructor(genome, maxInternal) {
@@ -289,85 +289,19 @@ function calcDiversity(survivors) {
    REACT COMPONENTS
    ============================================================ */
 
-// World Canvas
-function WorldCanvas({ world, cfg, generation, paused }) {
-  const canvasRef = useRef(null);
-  const W = cfg.worldWidth, H = cfg.worldHeight;
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !world) return;
-    const ctx = canvas.getContext("2d");
-    const cw = canvas.width, ch = canvas.height;
-    const cellW = cw / W, cellH = ch / H;
-
-    ctx.fillStyle = "#080c10";
-    ctx.fillRect(0, 0, cw, ch);
-
-    // Draw selection zone
-    ctx.save();
-    const mode = cfg.selectionMode;
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = "#00ff88";
-    if (mode === "east") ctx.fillRect(cw / 2, 0, cw / 2, ch);
-    else if (mode === "west") ctx.fillRect(0, 0, cw / 2, ch);
-    else if (mode === "west_east") { ctx.fillRect(0, 0, cfg.stripWidth * cellW, ch); ctx.fillRect(cw - cfg.stripWidth * cellW, 0, cfg.stripWidth * cellW, ch); }
-    else if (mode === "corners") {
-      const cs = cfg.cornerSize;
-      [[0, 0],[W - cs, 0],[0, H - cs],[W - cs, H - cs]].forEach(([rx, ry]) =>
-        ctx.fillRect(rx * cellW, ry * cellH, cs * cellW, cs * cellH));
-    } else if (mode === "center") {
-      ctx.beginPath(); ctx.arc(cw / 2, ch / 2, cfg.centerRadius * cellW, 0, Math.PI * 2); ctx.fill();
-    } else if (mode === "radioactive") {
-      ctx.fillStyle = "#ff3300";
-      ctx.fillRect(0, 0, W * 0.12 * cellW, ch);
-      ctx.fillRect(cw - W * 0.12 * cellW, 0, W * 0.12 * cellW, ch);
-    }
-    ctx.restore();
-
-    // Grid lines (subtle)
-    ctx.strokeStyle = "rgba(255,255,255,0.02)";
-    ctx.lineWidth = 0.5;
-    for (let x = 0; x <= W; x += 8) { ctx.beginPath(); ctx.moveTo(x * cellW, 0); ctx.lineTo(x * cellW, ch); ctx.stroke(); }
-    for (let y = 0; y <= H; y += 8) { ctx.beginPath(); ctx.moveTo(0, y * cellH); ctx.lineTo(cw, y * cellH); ctx.stroke(); }
-
-    // Draw creatures
-    world.creatures.forEach(c => {
-      if (!c.alive) return;
-      const px = c.x * cellW + cellW / 2, py = c.y * cellH + cellH / 2;
-      const r = Math.max(1.5, cellW * 0.4);
-      ctx.beginPath();
-      ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgb(${c.color[0]},${c.color[1]},${c.color[2]})`;
-      ctx.fill();
-    });
-
-    // Gen label
-    ctx.fillStyle = "rgba(0,255,136,0.5)";
-    ctx.font = "bold 11px 'Courier New'";
-    ctx.fillText(`GEN ${generation}`, 8, 16);
-  });
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={400} height={400}
-      style={{ width: "100%", height: "100%", display: "block", borderRadius: 4 }}
-    />
-  );
-}
+// (WorldCanvas removed — rendering is done directly via canvasWorldRef)
 
 // Neural Network SVG Diagram
 function NeuralDiagram({ creature }) {
   if (!creature) return <div style={{ color: "#555", textAlign: "center", paddingTop: 60, fontSize: 12 }}>No creature selected</div>;
   const conns = creature.brain.conns;
 
-  const activeSensors  = [...new Set(conns.filter(c => c.sourceType === 0).map(c => c.sourceId))].sort((a,b)=>a-b);
+  const activeSensors = [...new Set(conns.filter(c => c.sourceType === 0).map(c => c.sourceId))].sort((a, b) => a - b);
   const activeInternal = [...new Set([
     ...conns.filter(c => c.sourceType === 1).map(c => c.sourceId),
     ...conns.filter(c => c.sinkType === 0).map(c => c.sinkId)
-  ])].sort((a,b)=>a-b);
-  const activeActions  = [...new Set(conns.filter(c => c.sinkType === 1).map(c => c.sinkId))].sort((a,b)=>a-b);
+  ])].sort((a, b) => a - b);
+  const activeActions = [...new Set(conns.filter(c => c.sinkType === 1).map(c => c.sinkId))].sort((a, b) => a - b);
 
   const svgW = 320, svgH = 240;
   const posMap = {};
@@ -410,7 +344,7 @@ function NeuralDiagram({ creature }) {
   return (
     <svg viewBox={`0 0 ${svgW} ${svgH}`} style={{ width: "100%", height: "100%" }}>
       <text x={svgW * 0.08} y={12} fill="#4488ff" fontSize={8} textAnchor="middle">SENSORS</text>
-      <text x={svgW * 0.5}  y={12} fill="#aaaaaa" fontSize={8} textAnchor="middle">INTERNAL</text>
+      <text x={svgW * 0.5} y={12} fill="#aaaaaa" fontSize={8} textAnchor="middle">INTERNAL</text>
       <text x={svgW * 0.92} y={12} fill="#ff88aa" fontSize={8} textAnchor="middle">ACTIONS</text>
       {edges}
       {activeSensors.map(id => <NodeCircle key={`S${id}`} id={`S${id}`} col="S" color="#4488ff" labelMap={SENSOR_LABELS} />)}
@@ -427,13 +361,13 @@ function NeuralDiagram({ creature }) {
 function Ctrl({ label, value, min, max, step, onChange, unit = "" }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 10, color: "#8899aa", letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</span>
-        <span style={{ fontSize: 10, color: "#00ff88", fontFamily: "monospace" }}>{value}{unit}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 13, color: "#a8bece", letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
+        <span style={{ fontSize: 13, color: "#00e87a", fontFamily: "monospace", fontWeight: "bold" }}>{value}{unit}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#00ff88", height: 3, cursor: "pointer" }} />
+        style={{ width: "100%", accentColor: "#00e87a", height: 4, cursor: "pointer" }} />
     </div>
   );
 }
@@ -441,9 +375,9 @@ function Ctrl({ label, value, min, max, step, onChange, unit = "" }) {
 function Select({ label, value, options, onChange }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 10, color: "#8899aa", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, color: "#a8bece", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", background: "#0d1520", color: "#00ff88", border: "1px solid #1e3040", borderRadius: 4, padding: "4px 8px", fontSize: 11, fontFamily: "monospace" }}>
+        style={{ width: "100%", background: "#0d1a28", color: "#00e87a", border: "1px solid #2a4060", borderRadius: 4, padding: "5px 8px", fontSize: 13, fontFamily: "monospace" }}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
@@ -453,11 +387,15 @@ function Select({ label, value, options, onChange }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-      <span style={{ fontSize: 10, color: "#8899aa", letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</span>
-      <div onClick={() => onChange(!value)} style={{ width: 36, height: 18, borderRadius: 9,
-        background: value ? "#00cc66" : "#1e3040", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
-        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 14, height: 14,
-          borderRadius: "50%", background: value ? "#fff" : "#556", transition: "left 0.2s" }} />
+      <span style={{ fontSize: 13, color: "#a8bece", letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
+      <div onClick={() => onChange(!value)} style={{
+        width: 40, height: 22, borderRadius: 11,
+        background: value ? "#00cc66" : "#2a4060", cursor: "pointer", position: "relative", transition: "background 0.2s"
+      }}>
+        <div style={{
+          position: "absolute", top: 3, left: value ? 20 : 3, width: 16, height: 16,
+          borderRadius: "50%", background: value ? "#fff" : "#7a9ab8", transition: "left 0.2s"
+        }} />
       </div>
     </div>
   );
@@ -631,10 +569,28 @@ export default function EvoSim() {
     return () => { clearTimeout(timeout); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [running, cfg.speed, runOneGen]);
 
-  // ── Sync world to canvas ───────────────────────────────────
+  // ── Responsive canvas sizing ───────────────────────────────
   const canvasWorldRef = useRef(null);
+  const canvasContainerRef = useRef(null);
   const canvasCfgRef = useRef(cfg);
   canvasCfgRef.current = cfg;
+
+  // Keep canvas pixel dimensions in sync with its CSS container
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    const canvas = canvasWorldRef.current;
+    if (!container || !canvas) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const size = Math.min(width, height);
+        canvas.width = size;
+        canvas.height = size;
+      }
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!displayWorld) return;
@@ -653,15 +609,15 @@ export default function EvoSim() {
     if (mode === "east") ctx.fillRect(cw / 2, 0, cw / 2, ch);
     else if (mode === "west") ctx.fillRect(0, 0, cw / 2, ch);
     else if (mode === "west_east") { ctx.fillRect(0, 0, cfg.stripWidth * cellW, ch); ctx.fillRect(cw - cfg.stripWidth * cellW, 0, cfg.stripWidth * cellW, ch); }
-    else if (mode === "corners") { const cs = cfg.cornerSize; [[0,0],[W-cs,0],[0,H-cs],[W-cs,H-cs]].forEach(([rx,ry]) => ctx.fillRect(rx*cellW,ry*cellH,cs*cellW,cs*cellH)); }
-    else if (mode === "center") { ctx.beginPath(); ctx.arc(cw/2,ch/2,cfg.centerRadius*cellW,0,Math.PI*2); ctx.fill(); }
-    else if (mode === "radioactive") { ctx.fillRect(0,0,W*0.12*cellW,ch); ctx.fillRect(cw-W*0.12*cellW,0,W*0.12*cellW,ch); }
+    else if (mode === "corners") { const cs = cfg.cornerSize;[[0, 0], [W - cs, 0], [0, H - cs], [W - cs, H - cs]].forEach(([rx, ry]) => ctx.fillRect(rx * cellW, ry * cellH, cs * cellW, cs * cellH)); }
+    else if (mode === "center") { ctx.beginPath(); ctx.arc(cw / 2, ch / 2, cfg.centerRadius * cellW, 0, Math.PI * 2); ctx.fill(); }
+    else if (mode === "radioactive") { ctx.fillRect(0, 0, W * 0.12 * cellW, ch); ctx.fillRect(cw - W * 0.12 * cellW, 0, W * 0.12 * cellW, ch); }
     ctx.restore();
 
     ctx.strokeStyle = "rgba(255,255,255,0.018)";
     ctx.lineWidth = 0.5;
-    for (let x = 0; x <= W; x += 8) { ctx.beginPath(); ctx.moveTo(x*cellW,0); ctx.lineTo(x*cellW,ch); ctx.stroke(); }
-    for (let y = 0; y <= H; y += 8) { ctx.beginPath(); ctx.moveTo(0,y*cellH); ctx.lineTo(cw,y*cellH); ctx.stroke(); }
+    for (let x = 0; x <= W; x += 8) { ctx.beginPath(); ctx.moveTo(x * cellW, 0); ctx.lineTo(x * cellW, ch); ctx.stroke(); }
+    for (let y = 0; y <= H; y += 8) { ctx.beginPath(); ctx.moveTo(0, y * cellH); ctx.lineTo(cw, y * cellH); ctx.stroke(); }
 
     displayWorld.creatures.forEach(c => {
       if (!c.alive) return;
@@ -690,34 +646,54 @@ export default function EvoSim() {
 
   // ── Styles ─────────────────────────────────────────────────
   const S = {
-    root: { display: "flex", flexDirection: "column", height: "100vh", background: "#060a0f",
-      color: "#c8d8e8", fontFamily: "'Courier New', monospace", overflow: "hidden" },
-    header: { display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "8px 16px", borderBottom: "1px solid #0f2030",
-      background: "linear-gradient(90deg, #080f18 0%, #0a1520 100%)" },
-    logo: { fontSize: 16, fontWeight: "bold", color: "#00ff88", letterSpacing: "0.15em" },
-    genBadge: { fontSize: 11, color: "#007744", letterSpacing: "0.1em" },
-    body: { display: "flex", flex: 1, overflow: "hidden" },
-    sidebar: { width: 220, minWidth: 220, background: "#07101a", borderRight: "1px solid #0f2030",
-      overflowY: "auto", padding: "12px 12px", display: "flex", flexDirection: "column", gap: 8 },
-    sectionTitle: { fontSize: 9, color: "#004422", letterSpacing: "0.15em", textTransform: "uppercase",
-      borderBottom: "1px solid #0f2030", paddingBottom: 4, marginBottom: 8, marginTop: 8 },
-    center: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
-    worldBox: { flex: "0 0 auto", display: "flex", justifyContent: "center", padding: 12 },
-    canvas: { width: 380, height: 380, border: "1px solid #0f2030", borderRadius: 6,
-      boxShadow: "0 0 20px rgba(0,255,136,0.04)" },
-    statsRow: { display: "flex", gap: 8, padding: "0 12px 8px" },
-    statCard: { flex: 1, background: "#07101a", border: "1px solid #0f2030", borderRadius: 6,
-      padding: "6px 10px", textAlign: "center" },
-    statVal: { fontSize: 16, color: "#00ff88", fontWeight: "bold" },
-    statLbl: { fontSize: 8, color: "#446655", letterSpacing: "0.1em", textTransform: "uppercase" },
-    chartBox: { flex: 1, padding: "0 12px 8px", minHeight: 0 },
-    right: { width: 300, minWidth: 300, background: "#07101a", borderLeft: "1px solid #0f2030",
-      display: "flex", flexDirection: "column", padding: 12, gap: 8 },
-    ctrlRow: { display: "flex", gap: 8, padding: "0 12px 8px" },
-    btn: (col) => ({ padding: "6px 14px", borderRadius: 4, border: `1px solid ${col}`,
-      background: "transparent", color: col, cursor: "pointer", fontSize: 11,
-      letterSpacing: "0.08em", fontFamily: "monospace", transition: "background 0.15s" }),
+    root: {
+      display: "flex", flexDirection: "column", height: "100%", background: "#080d14",
+      color: "#d0e4f4", fontFamily: "'Courier New', monospace", overflow: "hidden"
+    },
+    header: {
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "10px 18px", borderBottom: "1px solid #1a3050", flexShrink: 0,
+      background: "linear-gradient(90deg, #0a1220 0%, #0d1828 100%)"
+    },
+    logo: { fontSize: 18, fontWeight: "bold", color: "#00e87a", letterSpacing: "0.15em" },
+    body: { display: "flex", flex: 1, overflow: "hidden", minHeight: 0 },
+    sidebar: {
+      width: 220, minWidth: 190, background: "#09121e", borderRight: "1px solid #1a3050",
+      overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 6, flexShrink: 0
+    },
+    sectionTitle: {
+      fontSize: 11, color: "#5a9a78", letterSpacing: "0.12em", textTransform: "uppercase",
+      borderBottom: "1px solid #1a3050", paddingBottom: 5, marginBottom: 10, marginTop: 10, fontWeight: "bold"
+    },
+    center: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 },
+    // worldBox: square canvas constrained by available height
+    worldBox: {
+      flex: "0 1 auto", display: "flex", justifyContent: "center", alignItems: "center",
+      padding: "4px 12px", minHeight: 0
+    },
+    canvasContainer: {
+      position: "relative", width: "100%", maxWidth: "min(100%, calc(100vh - 260px))",
+      aspectRatio: "1 / 1", border: "1px solid #1a3050", borderRadius: 6,
+      boxShadow: "0 0 24px rgba(0,232,122,0.06)", overflow: "hidden"
+    },
+    canvas: { display: "block", width: "100%", height: "100%" },
+    statsRow: { display: "flex", gap: 8, padding: "0 12px 8px", flexShrink: 0 },
+    statCard: {
+      flex: 1, background: "#09121e", border: "1px solid #1a3050", borderRadius: 6,
+      padding: "7px 10px", textAlign: "center", minWidth: 0
+    },
+    statVal: { fontSize: 20, color: "#00e87a", fontWeight: "bold" },
+    statLbl: { fontSize: 11, color: "#6a9aaa", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 2 },
+    chartBox: { flex: 1, padding: "0 12px 10px", minHeight: 0, display: "flex", flexDirection: "column" },
+    right: {
+      width: 290, minWidth: 230, maxWidth: 330, background: "#09121e", borderLeft: "1px solid #1a3050",
+      display: "flex", flexDirection: "column", padding: 12, gap: 8, flexShrink: 0, overflowY: "auto"
+    },
+    btn: (col) => ({
+      padding: "7px 16px", borderRadius: 4, border: `1px solid ${col}`,
+      background: "transparent", color: col, cursor: "pointer", fontSize: 13,
+      letterSpacing: "0.08em", fontFamily: "monospace", transition: "background 0.15s"
+    }),
   };
 
   return (
@@ -726,20 +702,22 @@ export default function EvoSim() {
       <div style={S.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={S.logo}>⬡ EVOSIM</span>
-          <span style={{ fontSize: 9, color: "#224433", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: 12, color: "#5a8a70", letterSpacing: "0.08em" }}>
             EVOLUTIONARY NEURAL NETWORK SIMULATOR
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 10, color: "#336655" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 13, color: "#7ab898" }}>
             {scenarioInfo[cfg.selectionMode]}
           </span>
-          <span style={{ fontSize: 10, color: "#00ff88", fontWeight: "bold" }}>
+          <span style={{ fontSize: 13, color: "#00e87a", fontWeight: "bold" }}>
             GEN {generation}/{cfg.maxGenerations}
           </span>
-          <div style={{ width: 8, height: 8, borderRadius: "50%",
+          <div style={{
+            width: 8, height: 8, borderRadius: "50%",
             background: running ? "#00ff88" : "#334",
-            boxShadow: running ? "0 0 6px #00ff88" : "none" }} />
+            boxShadow: running ? "0 0 6px #00ff88" : "none"
+          }} />
         </div>
       </div>
 
@@ -761,13 +739,13 @@ export default function EvoSim() {
           <div style={S.sectionTitle}>🎯 Selection</div>
           <Select label="Scenario" value={cfg.selectionMode}
             options={[
-              { value: "east",        label: "East Half" },
-              { value: "west",        label: "West Half" },
-              { value: "west_east",   label: "Both Sides" },
-              { value: "corners",     label: "Corners" },
-              { value: "center",      label: "Centre Circle" },
+              { value: "east", label: "East Half" },
+              { value: "west", label: "West Half" },
+              { value: "west_east", label: "Both Sides" },
+              { value: "corners", label: "Corners" },
+              { value: "center", label: "Centre Circle" },
               { value: "radioactive", label: "Radioactive Walls" },
-              { value: "kill",        label: "Kill Enabled" },
+              { value: "kill", label: "Kill Enabled" },
             ]}
             onChange={v => updateCfg("selectionMode", v)} />
 
@@ -782,8 +760,8 @@ export default function EvoSim() {
 
           <div style={S.sectionTitle}>▶ Playback</div>
           <Ctrl label="Speed" value={cfg.speed} min={1} max={5} step={1} onChange={v => updateCfg("speed", v)} />
-          <div style={{ fontSize: 9, color: "#446655", marginTop: -6 }}>
-            {["Slow","Medium","Fast","Turbo","Max"][cfg.speed - 1]}
+          <div style={{ fontSize: 11, color: "#6a9a80", marginTop: -4 }}>
+            {["Slow", "Medium", "Fast", "Turbo", "Max"][cfg.speed - 1]}
           </div>
         </div>
 
@@ -798,9 +776,11 @@ export default function EvoSim() {
             <button style={S.btn("#888")} onClick={resetSimulation}>↺ RESET</button>
           </div>
 
-          {/* World canvas */}
-          <div style={{ display: "flex", justifyContent: "center", padding: "4px 12px" }}>
-            <canvas ref={canvasWorldRef} width={380} height={380} style={S.canvas} />
+          {/* World canvas – fills a square container sized by CSS aspect-ratio */}
+          <div style={S.worldBox}>
+            <div ref={canvasContainerRef} style={S.canvasContainer}>
+              <canvas ref={canvasWorldRef} style={S.canvas} />
+            </div>
           </div>
 
           {/* Live stats */}
@@ -820,25 +800,27 @@ export default function EvoSim() {
 
           {/* Evolution chart */}
           <div style={S.chartBox}>
-            <div style={{ fontSize: 9, color: "#336644", letterSpacing: "0.1em", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: "#5a9a78", letterSpacing: "0.1em", marginBottom: 6, fontWeight: "bold" }}>
               EVOLUTION CHART
             </div>
             {chartData.length > 1 ? (
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={chartData} margin={{ top: 2, right: 8, bottom: 2, left: 0 }}>
-                  <XAxis dataKey="gen" tick={{ fill: "#445566", fontSize: 8 }} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="left" tick={{ fill: "#445566", fontSize: 8 }} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fill: "#445566", fontSize: 8 }} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <Tooltip contentStyle={{ background: "#07101a", border: "1px solid #0f2030", fontSize: 10, color: "#ccc" }} />
-                  <Line yAxisId="left" type="monotone" dataKey="survivors" stroke="#00ff88" dot={false} strokeWidth={1.5} name="Survivors" />
-                  <Line yAxisId="right" type="monotone" dataKey="diversity" stroke="#aa44ff" dot={false} strokeWidth={1} strokeDasharray="3 3" name="Diversity %" />
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 4, right: 10, bottom: 4, left: 0 }}>
+                  <XAxis dataKey="gen" tick={{ fill: "#7a9ab8", fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" tick={{ fill: "#7a9ab8", fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fill: "#7a9ab8", fontSize: 11 }} tickLine={false} axisLine={false} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ background: "#0d1828", border: "1px solid #1a3050", fontSize: 12, color: "#d0e4f4" }} />
+                  <Line yAxisId="left" type="monotone" dataKey="survivors" stroke="#00e87a" dot={false} strokeWidth={2} name="Survivors" />
+                  <Line yAxisId="right" type="monotone" dataKey="diversity" stroke="#bb66ff" dot={false} strokeWidth={1.5} strokeDasharray="4 3" name="Diversity %" />
                   {chartData.some(d => d.murders > 0) &&
-                    <Line yAxisId="left" type="monotone" dataKey="murders" stroke="#ff6633" dot={false} strokeWidth={1} name="Murders" />}
+                    <Line yAxisId="left" type="monotone" dataKey="murders" stroke="#ff7744" dot={false} strokeWidth={1.5} name="Murders" />}
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#223", fontSize: 11, border: "1px dashed #0f2030", borderRadius: 4 }}>
+              <div style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#5a7a90", fontSize: 13, border: "1px dashed #1a3050", borderRadius: 4
+              }}>
                 Press START to begin simulation
               </div>
             )}
@@ -847,23 +829,27 @@ export default function EvoSim() {
 
         {/* Right panel – Neural Network */}
         <div style={S.right}>
-          <div style={{ fontSize: 9, color: "#336644", letterSpacing: "0.1em", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, color: "#5a9a78", letterSpacing: "0.1em", marginBottom: 6, fontWeight: "bold" }}>
             NEURAL NETWORK — BEST SURVIVOR
           </div>
-          <div style={{ flex: 1, border: "1px solid #0f2030", borderRadius: 6, background: "#060a0f",
-            overflow: "hidden", minHeight: 200 }}>
+          <div style={{
+            flex: 1, border: "1px solid #1a3050", borderRadius: 6, background: "#060d16",
+            overflow: "hidden", minHeight: 200
+          }}>
             <NeuralDiagram creature={sampleCreature} />
           </div>
 
           {sampleCreature && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 9, color: "#336644", letterSpacing: "0.1em", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: "#5a9a78", letterSpacing: "0.1em", marginBottom: 6, fontWeight: "bold" }}>
                 GENOME SAMPLE
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 {sampleCreature.genome.slice(0, 16).map((g, i) => (
-                  <span key={i} style={{ fontSize: 7, fontFamily: "monospace",
-                    color: "#224433", background: "#0a1520", padding: "1px 3px", borderRadius: 2 }}>
+                  <span key={i} style={{
+                    fontSize: 10, fontFamily: "monospace",
+                    color: "#6ab898", background: "#0d1a28", padding: "2px 4px", borderRadius: 3
+                  }}>
                     {(g >>> 0).toString(16).padStart(8, "0")}
                   </span>
                 ))}
@@ -873,21 +859,23 @@ export default function EvoSim() {
 
           {sampleCreature && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 9, color: "#336644", letterSpacing: "0.1em", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: "#5a9a78", letterSpacing: "0.1em", marginBottom: 6, fontWeight: "bold" }}>
                 ACTIVE CONNECTIONS
               </div>
-              <div style={{ maxHeight: 160, overflowY: "auto" }}>
+              <div style={{ maxHeight: 180, overflowY: "auto" }}>
                 {sampleCreature.brain.conns.slice(0, 20).map((c, i) => {
                   const src = c.sourceType === 0 ? SENSOR_LABELS[c.sourceId] : `internal_${c.sourceId}`;
                   const snk = c.sinkType === 1 ? ACTION_LABELS[c.sinkId] : `internal_${c.sinkId}`;
                   return (
-                    <div key={i} style={{ fontSize: 8, display: "flex", justifyContent: "space-between",
-                      padding: "2px 0", borderBottom: "1px solid #0a1520", gap: 6 }}>
-                      <span style={{ color: "#4477cc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{src}</span>
-                      <span style={{ color: c.weight >= 0 ? "#22bb66" : "#cc3344", minWidth: 40, textAlign: "right" }}>
+                    <div key={i} style={{
+                      fontSize: 11, display: "flex", justifyContent: "space-between",
+                      padding: "3px 0", borderBottom: "1px solid #0d1a28", gap: 6
+                    }}>
+                      <span style={{ color: "#6699dd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{src}</span>
+                      <span style={{ color: c.weight >= 0 ? "#33cc77" : "#ee4455", minWidth: 44, textAlign: "right", fontWeight: "bold" }}>
                         {c.weight >= 0 ? "+" : ""}{c.weight.toFixed(2)}
                       </span>
-                      <span style={{ color: "#cc6688", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{snk}</span>
+                      <span style={{ color: "#dd7799", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{snk}</span>
                     </div>
                   );
                 })}
@@ -895,11 +883,11 @@ export default function EvoSim() {
             </div>
           )}
 
-          <div style={{ marginTop: "auto", padding: "8px 0 0", borderTop: "1px solid #0f2030" }}>
-            <div style={{ fontSize: 8, color: "#334", lineHeight: 1.6 }}>
-              <div style={{ color: "#00ff88", display: "inline" }}>■ </div>Survivors (green zone)<br />
-              <div style={{ color: "#aa44ff", display: "inline" }}>■ </div>Genetic diversity<br />
-              <div style={{ color: "#4488ff", display: "inline" }}>● </div>Sensor neurons<br />
+          <div style={{ marginTop: "auto", padding: "10px 0 0", borderTop: "1px solid #1a3050" }}>
+            <div style={{ fontSize: 11, color: "#8ab0c0", lineHeight: 1.8 }}>
+              <div style={{ color: "#00e87a", display: "inline" }}>■ </div>Survivors (green zone)<br />
+              <div style={{ color: "#bb66ff", display: "inline" }}>■ </div>Genetic diversity<br />
+              <div style={{ color: "#5599ee", display: "inline" }}>● </div>Sensor neurons<br />
               <div style={{ color: "#ff88aa", display: "inline" }}>● </div>Action neurons
             </div>
           </div>
