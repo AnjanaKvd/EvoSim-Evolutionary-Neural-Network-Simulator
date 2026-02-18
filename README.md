@@ -1,7 +1,6 @@
 # EvoSim — Evolutionary Neural Network Simulator
 
 > *"Whatever reproduces, reproduces. Whatever doesn't, doesn't."*  
-> — Dave Miller
 
 A Python simulation of natural selection where creatures evolve neural network brains from scratch — no reward function, no gradients, no hand-coded behaviour. Just the five conditions for evolution: self-replication, a genome blueprint, inheritance, mutation, and selection pressure.
 
@@ -220,23 +219,6 @@ The best survivor at Generation 80 — a creature whose genome was selected beca
 > The `random` sensor is wired in to break ties and avoid getting stuck.
 
 **The brain evolved its own solution.** No programmer told it to use `move_x`. No reward was given for using it. Selection pressure on eastward movement made `move_x`-wired genomes proliferate over 80 generations.
-
----
-
-### More Neural Diagrams
-
-<table>
-<tr>
-<td align="center"><b>Generation 25</b></td>
-<td align="center"><b>Generation 50</b></td>
-<td align="center"><b>Generation 75</b></td>
-</tr>
-<tr>
-<td><img src="output/demo/neural/gen_000025_best.png" width="260"/></td>
-<td><img src="output/demo/neural/gen_000050_best.png" width="260"/></td>
-<td><img src="output/demo/neural/gen_000075_best.png" width="260"/></td>
-</tr>
-</table>
 
 ---
 
